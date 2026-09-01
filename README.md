@@ -10,6 +10,8 @@ Backend desarrollado para la prueba técnica de registro y consulta de créditos
 - PostgreSQL 16
 - Docker
 - Swagger / OpenAPI
+- Hangfire
+- MailKit
 
 ## Requisitos
 
@@ -112,6 +114,37 @@ Ejemplo:
 GET /api/credits?salesperson=carlos&sortBy=amount&sortOrder=desc
 ```
 
+## Notificaciones por correo
+
+Cuando se registra un nuevo crédito, la API crea un trabajo en segundo plano utilizando Hangfire.
+
+El registro del crédito no espera a que termine el envío del correo. Hangfire procesa posteriormente el trabajo y MailKit realiza el envío mediante SMTP.
+
+El correo incluye:
+
+- Nombre del cliente.
+- Valor del crédito.
+- Comercial que registró el crédito.
+- Fecha de registro.
+
+Las credenciales SMTP no se almacenan en el repositorio. Durante el desarrollo se utilizan .NET User Secrets.
+
+### Configuración local del correo
+
+```powershell
+dotnet user-secrets set "Email:Username" "correo@gmail.com"
+dotnet user-secrets set "Email:FromEmail" "correo@gmail.com"
+dotnet user-secrets set "Email:Password" "APP_PASSWORD"
+```
+
+El dashboard de Hangfire está disponible durante desarrollo en:
+
+```text
+http://localhost:5136/hangfire
+```
+
+El puerto puede variar dependiendo de la configuración local.
+
 ## Validaciones
 
 Actualmente se realizan validaciones en el backend para:
@@ -143,7 +176,6 @@ Program.cs
 
 ## Próximos pasos
 
-- Implementar envío de correo en segundo plano.
 - Mejorar manejo de errores.
 - Agregar rate limiting.
 - Implementar autenticación si el tiempo de desarrollo lo permite.

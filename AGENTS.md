@@ -12,6 +12,8 @@ This repository contains the backend API for the FYA credit management technical
 - PostgreSQL and Npgsql
 - Swagger / OpenAPI
 - Docker for the local database
+- Hangfire
+- MailKit
 
 ## Project structure
 
@@ -82,10 +84,11 @@ Currently implemented:
 - Credit consultation.
 - Search filters.
 - Sorting.
+- Background email notifications with Hangfire.
+- SMTP email delivery with MailKit.
 - Backend validation.
 - Swagger / OpenAPI.
 
 Still to be implemented:
 
-- Background email notifications.
 - Additional security features.
