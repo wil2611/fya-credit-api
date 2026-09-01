@@ -2,7 +2,7 @@ using FyaCreditApi.Data;
 using FyaCreditApi.DTOs;
 using FyaCreditApi.Entities;
 using Microsoft.AspNetCore.Mvc;
-
+using Microsoft.EntityFrameworkCore;
 namespace FyaCreditApi.Controllers;
 
 [ApiController]
@@ -36,5 +36,26 @@ public class CreditsController : ControllerBase
         await _context.SaveChangesAsync();
 
         return StatusCode(StatusCodes.Status201Created, credit);
+    }
+    
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<CreditResponse>>> GetCredits()
+    {
+        var credits = await _context.Credits
+            .OrderByDescending(c => c.CreatedAt)
+            .Select(c => new CreditResponse
+            {
+                Id = c.Id,
+                ClientName = c.ClientName,
+                ClientDocument = c.ClientDocument,
+                Amount = c.Amount,
+                InterestRate = c.InterestRate,
+                TermMonths = c.TermMonths,
+                Salesperson = c.Salesperson,
+                CreatedAt = c.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(credits);
     }
 }
