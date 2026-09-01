@@ -1,5 +1,9 @@
 using FyaCreditApi.Data;
 using Microsoft.EntityFrameworkCore;
+using FyaCreditApi.Configuration;
+using FyaCreditApi.Services;
+using Hangfire;
+using Hangfire.PostgreSql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +12,21 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")
     )
 );
+
+builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection("Email")
+);
+
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddHangfire(configuration =>
+    configuration.UsePostgreSqlStorage(options =>
+        options.UseNpgsqlConnection(
+            builder.Configuration.GetConnectionString("DefaultConnection")
+        )
+    )
+);
+
+builder.Services.AddHangfireServer();
 // Add services to the container.
 
 builder.Services.AddControllers();
@@ -17,6 +36,7 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+app.UseHangfireDashboard("/hangfire");
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

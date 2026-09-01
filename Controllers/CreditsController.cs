@@ -3,6 +3,9 @@ using FyaCreditApi.DTOs;
 using FyaCreditApi.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using FyaCreditApi.Services;
+using Hangfire;
+
 namespace FyaCreditApi.Controllers;
 
 [ApiController]
@@ -34,6 +37,10 @@ public class CreditsController : ControllerBase
         _context.Credits.Add(credit);
 
         await _context.SaveChangesAsync();
+        
+        BackgroundJob.Enqueue<IEmailService>(
+            service => service.SendCreditCreatedEmailAsync(credit.Id)
+        );
 
         return StatusCode(StatusCodes.Status201Created, credit);
     }
