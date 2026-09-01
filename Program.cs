@@ -65,9 +65,22 @@ builder.Services.AddRateLimiter(options =>
     );
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:8100")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
 
 app.UseExceptionHandler();
+
+app.UseCors("Frontend");
 
 app.UseRateLimiter();
 
