@@ -36,6 +36,9 @@ builder.Services.AddHangfire(configuration =>
         )
     )
 );
+builder.Services.Configure<SendGridSettings>(
+    builder.Configuration.GetSection("SendGrid"));
+
 
 builder.Services.AddHangfireServer();
 // Add services to the container.

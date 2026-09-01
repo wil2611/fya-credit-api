@@ -1,21 +1,20 @@
 using FyaCreditApi.Configuration;
 using FyaCreditApi.Data;
-using MailKit.Net.Smtp;
-using MailKit.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using MimeKit;
+using SendGrid;
+using SendGrid.Helpers.Mail;
 
 namespace FyaCreditApi.Services;
 
 public class EmailService : IEmailService
 {
     private readonly AppDbContext _context;
-    private readonly EmailSettings _settings;
+    private readonly SendGridSettings _settings;
 
     public EmailService(
         AppDbContext context,
-        IOptions<EmailSettings> settings)
+        IOptions<SendGridSettings> settings)
     {
         _context = context;
         _settings = settings.Value;
@@ -28,46 +27,44 @@ public class EmailService : IEmailService
 
         if (credit is null)
         {
-            return;
+            throw new InvalidOperationException(
+                $"Credit with ID {creditId} was not found.");
         }
 
-        var message = new MimeMessage();
+        var client = new SendGridClient(_settings.ApiKey);
 
-        message.From.Add(
-            new MailboxAddress(_settings.FromName, _settings.FromEmail)
-        );
+        var from = new EmailAddress(
+            _settings.FromEmail,
+            _settings.FromName);
 
-        message.To.Add(
-            MailboxAddress.Parse("williamperezdiaz26@gmail.com")
-        );
+        var to = new EmailAddress("williamperezdiaz26@gmail.com");
 
-        message.Subject = "Nuevo crédito registrado";
+        const string subject = "Nuevo crédito registrado";
 
-        message.Body = new TextPart("plain")
+        var body = $"""
+                    Se ha registrado un nuevo crédito.
+
+                    Cliente: {credit.ClientName}
+                    Valor del crédito: ${credit.Amount:N0}
+                    Comercial: {credit.Salesperson}
+                    Fecha de registro: {credit.CreatedAt:dd/MM/yyyy HH:mm}
+                    """;
+
+        var message = MailHelper.CreateSingleEmail(
+            from,
+            to,
+            subject,
+            body,
+            htmlContent: null);
+
+        var response = await client.SendEmailAsync(message);
+
+        var statusCode = (int)response.StatusCode;
+
+        if (statusCode < 200 || statusCode >= 300)
         {
-            Text =
-                $"Se ha registrado un nuevo crédito.\n\n" +
-                $"Cliente: {credit.ClientName}\n" +
-                $"Valor del crédito: ${credit.Amount:N0}\n" +
-                $"Comercial: {credit.Salesperson}\n" +
-                $"Fecha de registro: {credit.CreatedAt:dd/MM/yyyy HH:mm}"
-        };
-
-        using var client = new SmtpClient();
-
-        await client.ConnectAsync(
-            _settings.Host,
-            _settings.Port,
-            SecureSocketOptions.StartTls
-        );
-
-        await client.AuthenticateAsync(
-            _settings.Username,
-            _settings.Password
-        );
-
-        await client.SendAsync(message);
-
-        await client.DisconnectAsync(true);
+            throw new InvalidOperationException(
+                $"SendGrid failed to send the email. Status code: {statusCode}");
+        }
     }
 }
