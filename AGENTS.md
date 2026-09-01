@@ -79,13 +79,13 @@ Currently implemented:
 - Entity Framework Core configuration and initial migration.
 - Credit entity.
 - Credit creation endpoint.
+- Credit consultation.
+- Search filters.
+- Sorting.
 - Backend validation.
 - Swagger / OpenAPI.
 
 Still to be implemented:
 
-- Credit consultation.
-- Search filters.
-- Sorting.
 - Background email notifications.
 - Additional security features.

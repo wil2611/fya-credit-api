@@ -87,6 +87,31 @@ Ejemplo:
 
 Una creación correcta devuelve `201 Created`.
 
+### Consultar créditos
+
+```http
+GET /api/credits
+```
+
+Filtros disponibles:
+
+- `clientName`
+- `clientDocument`
+- `salesperson`
+
+Opciones de ordenamiento:
+
+- `sortBy=amount`
+- `sortBy=createdAt`
+- `sortOrder=asc`
+- `sortOrder=desc`
+
+Ejemplo:
+
+```http
+GET /api/credits?salesperson=carlos&sortBy=amount&sortOrder=desc
+```
+
 ## Validaciones
 
 Actualmente se realizan validaciones en el backend para:
@@ -118,9 +143,6 @@ Program.cs
 
 ## Próximos pasos
 
-- Consultar créditos registrados.
-- Agregar filtros por cliente, documento y comercial.
-- Agregar ordenamiento por fecha y valor.
 - Implementar envío de correo en segundo plano.
 - Mejorar manejo de errores.
 - Agregar rate limiting.
