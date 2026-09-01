@@ -50,6 +50,9 @@ dotnet ef database update
 - Do not commit generated build folders such as `bin` or `obj`.
 - Do not commit production credentials or secrets.
 - Keep Swagger documentation working.
+- Keep API error responses consistent.
+- Do not expose exception details or sensitive information to clients.
+- Keep rate limiting enabled for API endpoints.
 
 ## API conventions
 
@@ -86,6 +89,8 @@ Currently implemented:
 - Sorting.
 - Background email notifications with Hangfire.
 - SMTP email delivery with MailKit.
+- Global exception handling with ProblemDetails.
+- Rate limiting per client IP.
 - Backend validation.
 - Swagger / OpenAPI.
 

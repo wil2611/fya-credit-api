@@ -174,11 +174,31 @@ Program.cs
 - `Entities`: modelos persistidos en la base de datos.
 - `Migrations`: migraciones generadas por Entity Framework Core.
 
+## Seguridad y manejo de errores
+
+La API incluye manejo global de excepciones utilizando `ProblemDetails`.
+
+Las respuestas producidas por errores inesperados utilizan un formato consistente e incluyen un `traceId` que puede utilizarse para relacionar la respuesta con los logs de la aplicación.
+
+También se implementa rate limiting por dirección IP.
+
+Actualmente cada cliente puede realizar un máximo de:
+
+```text
+60 solicitudes por minuto
+```
+
+Cuando se supera este límite, la API responde con:
+
+```text
+429 Too Many Requests
+```
+
+Las validaciones de los datos recibidos se realizan en el backend antes de procesar las solicitudes.
+
 ## Próximos pasos
 
-- Mejorar manejo de errores.
-- Agregar rate limiting.
-- Implementar autenticación si el tiempo de desarrollo lo permite.
+- Implementar autenticación JWT si el tiempo de desarrollo lo permite.
 
 ## Estado del proyecto
 
