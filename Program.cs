@@ -88,7 +88,12 @@ app.UseCors("Frontend");
 
 app.UseRateLimiter();
 
-app.UseHangfireDashboard("/hangfire");
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+    app.UseHangfireDashboard("/hangfire");
+}
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
