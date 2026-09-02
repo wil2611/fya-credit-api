@@ -1,10 +1,10 @@
 using FyaCreditApi.Data;
 using FyaCreditApi.DTOs;
 using FyaCreditApi.Entities;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using FyaCreditApi.Services;
 using Hangfire;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace FyaCreditApi.Controllers;
 
@@ -25,12 +25,12 @@ public class CreditsController : ControllerBase
     {
         var credit = new Credit
         {
-            ClientName = request.ClientName,
-            ClientDocument = request.ClientDocument,
+            ClientName = request.ClientName.Trim(),
+            ClientDocument = request.ClientDocument.Trim(),
             Amount = request.Amount,
             InterestRate = request.InterestRate,
             TermMonths = request.TermMonths,
-            Salesperson = request.Salesperson,
+            Salesperson = request.Salesperson.Trim(),
             CreatedAt = DateTime.UtcNow
         };
 
@@ -47,30 +47,30 @@ public class CreditsController : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CreditResponse>>> GetCredits(
-    [FromQuery] string? clientName,
-    [FromQuery] string? clientDocument,
-    [FromQuery] string? salesperson,
-    [FromQuery] string? sortBy,
-    [FromQuery] string? sortOrder = "desc")
+        [FromQuery] string? clientName,
+        [FromQuery] string? clientDocument,
+        [FromQuery] string? salesperson,
+        [FromQuery] string? sortBy,
+        [FromQuery] string? sortOrder = "desc")
     {
         var query = _context.Credits.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(clientName))
         {
             query = query.Where(c =>
-                EF.Functions.ILike(c.ClientName, $"%{clientName}%"));
+                EF.Functions.ILike(c.ClientName, $"%{clientName.Trim()}%"));
         }
 
         if (!string.IsNullOrWhiteSpace(clientDocument))
         {
             query = query.Where(c =>
-                c.ClientDocument.Contains(clientDocument));
+                c.ClientDocument.Contains(clientDocument.Trim()));
         }
 
         if (!string.IsNullOrWhiteSpace(salesperson))
         {
             query = query.Where(c =>
-                EF.Functions.ILike(c.Salesperson, $"%{salesperson}%"));
+                EF.Functions.ILike(c.Salesperson, $"%{salesperson.Trim()}%"));
         }
 
         var descending = sortOrder?.ToLower() != "asc";
