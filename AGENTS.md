@@ -68,6 +68,7 @@ Entities/
 Migrations/
 Services/
 Properties/
+database.sql
 Program.cs
 Dockerfile
 ```
@@ -196,20 +197,19 @@ SendGrid__FromName
 
 `FromEmail` must correspond to a verified SendGrid sender. Do not log or expose the API key.
 
-Before final delivery, confirm that the notification recipient matches the technical assessment requirement: `fyasocialcapital@gmail.com`.
+The notification recipient required by the technical assessment is:
+`fyasocialcapital@gmail.com`
 
 ## Validation
 
 The credit creation request validates:
 
-- Client name (required, max 120 chars).
-- Client document (required, max 30 chars).
+- Client name (required, max 120 chars, valid name characters).
+- Client document (required, max 30 chars, numeric only).
 - Credit amount (greater than zero).
 - Interest rate (between 0 and 100).
-- Term in months (greater than zero and within configured limit, e.g., 1-600).
-- Salesperson (required, max 120 chars).
-
-Validation changes should be implemented in the backend first.
+- Term in months (between 1 and 600).
+- Salesperson (required, max 120 chars, valid name characters).
 
 ## Error handling
 
@@ -230,7 +230,7 @@ CORS must permit only the origins required by the frontend and Capacitor applica
 
 - Local Ionic development.
 - Capacitor / Android.
-- Deployed mobile application consuming the Railway API.
+- Frontend deployed on Vercel.
 
 Avoid `AllowAnyOrigin` unless there is an explicit reason.
 
