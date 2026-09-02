@@ -175,7 +175,11 @@ dotnet user-secrets set "SendGrid:FromEmail" "tu-correo-verificado@dominio.com"
 dotnet user-secrets set "SendGrid:FromName" "FYA Credit App"
 ```
 
-El correo que se envía incluye:
+El correo de notificación se envía automáticamente a:
+
+`fyasocialcapital@gmail.com`
+
+El correo incluye:
 
 - Cliente
 - Valor del crédito
@@ -193,10 +197,10 @@ El correo que se envía incluye:
 
 ## Validaciones y Manejo de Errores
 
-- **Validaciones:** Se valida en backend que los campos obligatorios vengan presentes, longitudes máximas (nombres/documentos), valores numéricos positivos para montos y rangos razonables para tasas (0-100) y plazos (1-600 meses).
+- **Validaciones:** Se validan campos obligatorios, longitudes máximas, formato de nombres y documento, monto mayor a cero, tasa entre 0 y 100 y plazo entre 1 y 600 meses.
 - **Manejo de excepciones:** Se utiliza `ProblemDetails` para devolver respuestas de error estandarizadas. Las excepciones no controladas generan un código 500 con un `traceId` para depuración sin revelar detalles internos al cliente.
 - **Rate Limiting:** Se configuró un límite de 60 peticiones por minuto por IP. Si se excede, retorna `429 Too Many Requests`.
-- **CORS:** Habilitado para permitir peticiones desde el cliente web local y la aplicación móvil (Capacitor/Android).
+- **CORS:** Habilitado para permitir peticiones desde el cliente web local, la aplicación móvil (Capacitor/Android) y el frontend desplegado en Vercel.
 
 ## Docker
 
@@ -209,24 +213,28 @@ docker build -t fya-credit-api .
 ## Estructura del Proyecto
 
 ```text
-Configuration/   # Clases de binding para configuración (SendGridSettings)
-Controllers/     # Endpoints de la API (CreditsController)
+Configuration/   # Configuración de SendGrid
+Controllers/     # Endpoints de la API
 Data/            # DbContext y configuración de EF Core
-DTOs/            # Modelos de entrada y salida (CreateCreditRequest, CreditResponse)
-Entities/        # Entidades de base de datos (Credit)
+DTOs/            # Modelos de entrada y salida
+Entities/        # Entidades de base de datos
 Migrations/      # Migraciones de Entity Framework Core
-Services/        # Servicios de lógica de negocio (EmailService con SendGrid)
-Dockerfile       # Build multi-stage para despliegue en contenedor
-Program.cs       # Configuración de servicios, middlewares y pipeline HTTP
+Services/        # Servicios de envío de correo
+database.sql     # Script de creación de la base de datos
+Dockerfile       # Configuración Docker
+Program.cs       # Configuración principal de la aplicación
 ```
 
-## Verificaciones realizadas y pendientes
+## Estado del proyecto
 
-### Completado
-
-- [X] Endpoints de creación y consulta de créditos, con filtros y ordenamiento.
-- [X] Integración con PostgreSQL (local y en Supabase).
-- [X] Procesamiento de notificaciones en background con Hangfire.
-- [X] Envío de correos transaccionales con SendGrid API.
-- [X] Despliegue continuo en Railway.
-- [X] Manejo de errores con ProblemDetails, Rate Limiting y CORS.
+- [x] Registro de créditos.
+- [x] Consulta con filtros y ordenamiento.
+- [x] Validaciones de datos.
+- [x] PostgreSQL local y Supabase.
+- [x] Script `database.sql`.
+- [x] Envío de correos con SendGrid.
+- [x] Procesamiento en segundo plano con Hangfire.
+- [x] Swagger / OpenAPI.
+- [x] Manejo de errores y Rate Limiting.
+- [x] Docker.
+- [x] Despliegue en Railway.
