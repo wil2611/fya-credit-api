@@ -1,29 +1,62 @@
 # FYA Credit API
 
-Backend desarrollado para la prueba técnica de registro y consulta de créditos.
+Backend desarrollado en ASP.NET Core (.NET 8) para la prueba técnica de gestión y registro de créditos.
+
+La API permite registrar créditos, consultarlos con filtros y ordenamiento, y procesar notificaciones por correo de manera asíncrona mediante trabajos en segundo plano con Hangfire y SendGrid.
 
 ## Tecnologías
 
-- .NET 8
-- ASP.NET Core Web API
-- Entity Framework Core
-- PostgreSQL 16
-- Docker
-- Swagger / OpenAPI
-- Hangfire
-- MailKit
+- **.NET 8** (C#)
+- **ASP.NET Core Web API**
+- **Entity Framework Core** + **Npgsql**
+- **PostgreSQL 16**
+- **Hangfire** (Background Jobs)
+- **SendGrid API** (Envío de correos)
+- **Swagger / OpenAPI**
+- **Docker**
+- **Railway** (Hosting de la API)
+- **Supabase** (PostgreSQL en la nube)
+
+## Arquitectura y Flujo
+
+### 1. Flujo general
+
+```text
+Ionic React / Android (Capacitor)
+       ↓ HTTPS
+ASP.NET Core API
+       ↓
+Entity Framework Core
+       ↓
+PostgreSQL (Supabase / Local)
+```
+
+### 2. Envío de correos desacoplado
+
+Para no bloquear la respuesta HTTP al cliente, el envío de correos se procesa en segundo plano:
+
+```text
+POST /api/credits ──> Guarda crédito en BD ──> Responde 201 Created
+                            │
+                            └──> Encola trabajo en Hangfire
+                                        │
+                                        └──> SendGrid API ──> Notificación por correo
+```
 
 ## Requisitos
 
-Para ejecutar el proyecto se necesita:
-
-- .NET SDK 8
-- Docker
-- Git
+- .NET SDK 8.0+
+- Docker (opcional, para BD local)
+- Herramienta de migraciones de EF Core:
+  ```bash
+  dotnet tool install --global dotnet-ef
+  ```
 
 ## Base de datos
 
-El proyecto utiliza PostgreSQL. Para crear la base de datos local con Docker:
+### Opción 1: PostgreSQL local con Docker
+
+Puedes levantar una instancia local en el puerto 5432:
 
 ```bash
 docker run --name fya-postgres \
@@ -34,47 +67,72 @@ docker run --name fya-postgres \
   -d postgres:16
 ```
 
-En PowerShell también puede ejecutarse en una sola línea:
+*(En PowerShell es el mismo comando en una sola línea).*
 
-```powershell
-docker run --name fya-postgres -e POSTGRES_USER=fya_user -e POSTGRES_PASSWORD=fya_password -e POSTGRES_DB=fya_credit_db -p 5432:5432 -d postgres:16
-```
+La cadena de conexión para desarrollo local ya viene configurada por defecto en `appsettings.Development.json`.
 
-## Configuración
+### Opción 2: Base de datos en producción (Supabase)
 
-La conexión de desarrollo se encuentra en `appsettings.Development.json` y utiliza PostgreSQL en `localhost:5432`, la base de datos `fya_credit_db` y el usuario `fya_user`.
+En producción la aplicación se conecta a una instancia de PostgreSQL en Supabase mediante la variable de entorno `ConnectionStrings__DefaultConnection`.
 
-Las credenciales configuradas son únicamente para el entorno local de desarrollo.
+### Migraciones
 
-## Instalación
-
-Restaurar las dependencias, aplicar las migraciones y ejecutar la aplicación:
+Para aplicar las migraciones existentes a la base de datos:
 
 ```bash
-dotnet restore
 dotnet ef database update
-dotnet run
 ```
 
-## Swagger
+Si realizas cambios en las entidades y necesitas generar una nueva migración:
 
-Con la aplicación ejecutándose, Swagger puede consultarse en:
+```bash
+dotnet ef migrations add NombreDeLaMigracion
+```
+
+## Ejecución local
+
+1. Restaurar dependencias:
+
+   ```bash
+   dotnet restore
+   ```
+2. Aplicar migraciones:
+
+   ```bash
+   dotnet ef database update
+   ```
+3. Iniciar la API:
+
+   ```bash
+   dotnet run
+   ```
+
+Swagger estará disponible en:
 
 ```text
 http://localhost:5136/swagger
 ```
 
-El puerto puede variar dependiendo de la configuración local.
+El dashboard de Hangfire (solo habilitado en desarrollo) se encuentra en:
 
-## Endpoints implementados
-
-### Registrar crédito
-
-```http
-POST /api/credits
+```text
+http://localhost:5136/hangfire
 ```
 
-Ejemplo:
+## API en Producción
+
+- **Base URL:** `https://fya-credit-api-production.up.railway.app`
+- **Swagger UI:** `https://fya-credit-api-production.up.railway.app/swagger`
+
+*(Por seguridad, el dashboard de Hangfire no está expuesto en producción).*
+
+## Endpoints
+
+### 1. Crear crédito
+
+`POST /api/credits`
+
+**Body (JSON):**
 
 ```json
 {
@@ -87,119 +145,88 @@ Ejemplo:
 }
 ```
 
-Una creación correcta devuelve `201 Created`.
+**Respuesta:** `201 Created`
 
-### Consultar créditos
+### 2. Consultar créditos
 
-```http
-GET /api/credits
-```
+`GET /api/credits`
 
-Filtros disponibles:
+**Parámetros opcionales:**
 
-- `clientName`
-- `clientDocument`
-- `salesperson`
+- `clientName`: Filtrar por nombre del cliente (coincidencia parcial).
+- `clientDocument`: Filtrar por documento.
+- `salesperson`: Filtrar por comercial.
+- `sortBy`: Campo de ordenamiento (`amount` o `createdAt`, por defecto `createdAt`).
+- `sortOrder`: Dirección (`asc` o `desc`, por defecto `desc`).
 
-Opciones de ordenamiento:
-
-- `sortBy=amount`
-- `sortBy=createdAt`
-- `sortOrder=asc`
-- `sortOrder=desc`
-
-Ejemplo:
+**Ejemplo:**
 
 ```http
 GET /api/credits?salesperson=carlos&sortBy=amount&sortOrder=desc
 ```
 
-## Notificaciones por correo
+## Configuración de SendGrid
 
-Cuando se registra un nuevo crédito, la API crea un trabajo en segundo plano utilizando Hangfire.
-
-El registro del crédito no espera a que termine el envío del correo. Hangfire procesa posteriormente el trabajo y MailKit realiza el envío mediante SMTP.
-
-El correo incluye:
-
-- Nombre del cliente.
-- Valor del crédito.
-- Comercial que registró el crédito.
-- Fecha de registro.
-
-Las credenciales SMTP no se almacenan en el repositorio. Durante el desarrollo se utilizan .NET User Secrets.
-
-### Configuración local del correo
+Para que el envío de correos funcione localmente sin guardar credenciales en el repositorio, utiliza User Secrets de .NET:
 
 ```powershell
-dotnet user-secrets set "Email:Username" "correo@gmail.com"
-dotnet user-secrets set "Email:FromEmail" "correo@gmail.com"
-dotnet user-secrets set "Email:Password" "APP_PASSWORD"
+dotnet user-secrets set "SendGrid:ApiKey" "TU_SENDGRID_API_KEY"
+dotnet user-secrets set "SendGrid:FromEmail" "tu-correo-verificado@dominio.com"
+dotnet user-secrets set "SendGrid:FromName" "FYA Credit App"
 ```
 
-El dashboard de Hangfire está disponible durante desarrollo en:
+El correo que se envía incluye:
+
+- Cliente
+- Valor del crédito
+- Comercial
+- Fecha de registro
+
+## Variables de Entorno (Producción / Railway)
+
+- `ASPNETCORE_ENVIRONMENT`: `Production`
+- `ASPNETCORE_URLS`: `http://+:${PORT}`
+- `ConnectionStrings__DefaultConnection`: Cadena de conexión a Supabase.
+- `SendGrid__ApiKey`: API Key de SendGrid.
+- `SendGrid__FromEmail`: Remitente validado en SendGrid.
+- `SendGrid__FromName`: Nombre que aparece en el remitente.
+
+## Validaciones y Manejo de Errores
+
+- **Validaciones:** Se valida en backend que los campos obligatorios vengan presentes, longitudes máximas (nombres/documentos), valores numéricos positivos para montos y rangos razonables para tasas (0-100) y plazos (1-600 meses).
+- **Manejo de excepciones:** Se utiliza `ProblemDetails` para devolver respuestas de error estandarizadas. Las excepciones no controladas generan un código 500 con un `traceId` para depuración sin revelar detalles internos al cliente.
+- **Rate Limiting:** Se configuró un límite de 60 peticiones por minuto por IP. Si se excede, retorna `429 Too Many Requests`.
+- **CORS:** Habilitado para permitir peticiones desde el cliente web local y la aplicación móvil (Capacitor/Android).
+
+## Docker
+
+Para construir y probar la imagen localmente:
+
+```bash
+docker build -t fya-credit-api .
+```
+
+## Estructura del Proyecto
 
 ```text
-http://localhost:5136/hangfire
+Configuration/   # Clases de binding para configuración (SendGridSettings)
+Controllers/     # Endpoints de la API (CreditsController)
+Data/            # DbContext y configuración de EF Core
+DTOs/            # Modelos de entrada y salida (CreateCreditRequest, CreditResponse)
+Entities/        # Entidades de base de datos (Credit)
+Migrations/      # Migraciones de Entity Framework Core
+Services/        # Servicios de lógica de negocio (EmailService con SendGrid)
+Dockerfile       # Build multi-stage para despliegue en contenedor
+Program.cs       # Configuración de servicios, middlewares y pipeline HTTP
 ```
 
-El puerto puede variar dependiendo de la configuración local.
+## Verificaciones realizadas y pendientes
 
-## Validaciones
+### Completado
 
-Actualmente se realizan validaciones en el backend para:
-
-- Nombre del cliente requerido, con máximo 120 caracteres.
-- Documento requerido, con máximo 30 caracteres.
-- Valor del crédito mayor a cero.
-- Tasa de interés entre 0 y 100.
-- Plazo entre 1 y 600 meses.
-- Comercial requerido, con máximo 120 caracteres.
-
-## Estructura actual
-
-```text
-Controllers/
-Data/
-DTOs/
-Entities/
-Migrations/
-Properties/
-Program.cs
-```
-
-- `Controllers`: endpoints HTTP de la aplicación.
-- `Data`: configuración de Entity Framework y `AppDbContext`.
-- `DTOs`: objetos para recibir y enviar información a través de la API.
-- `Entities`: modelos persistidos en la base de datos.
-- `Migrations`: migraciones generadas por Entity Framework Core.
-
-## Seguridad y manejo de errores
-
-La API incluye manejo global de excepciones utilizando `ProblemDetails`.
-
-Las respuestas producidas por errores inesperados utilizan un formato consistente e incluyen un `traceId` que puede utilizarse para relacionar la respuesta con los logs de la aplicación.
-
-También se implementa rate limiting por dirección IP.
-
-Actualmente cada cliente puede realizar un máximo de:
-
-```text
-60 solicitudes por minuto
-```
-
-Cuando se supera este límite, la API responde con:
-
-```text
-429 Too Many Requests
-```
-
-Las validaciones de los datos recibidos se realizan en el backend antes de procesar las solicitudes.
-
-## Próximos pasos
-
-- Implementar autenticación JWT si el tiempo de desarrollo lo permite.
-
-## Estado del proyecto
-
-Proyecto actualmente en desarrollo como parte de una prueba técnica.
+- [X] Endpoints de creación y consulta de créditos, con filtros y ordenamiento.
+- [X] Integración con PostgreSQL (local y en Supabase).
+- [X] Procesamiento de notificaciones en background con Hangfire.
+- [X] Envío de correos transaccionales con SendGrid API.
+- [X] Despliegue continuo en Railway.
+- [X] Manejo de errores con ProblemDetails, Rate Limiting y CORS.
