@@ -76,7 +76,8 @@ builder.Services.AddCors(options =>
             .WithOrigins(
                 "http://localhost:8100",
                 "http://localhost",
-                "https://localhost"
+                "https://localhost",
+                "https://fya-credit-app.vercel.app"
             )
             .AllowAnyHeader()
             .AllowAnyMethod();
