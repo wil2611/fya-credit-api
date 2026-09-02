@@ -37,7 +37,7 @@ public class EmailService : IEmailService
             _settings.FromEmail,
             _settings.FromName);
 
-        var to = new EmailAddress("williamperezdiaz26@gmail.com");
+        var to = new EmailAddress("fyasocialcapital@gmail.com");
 
         const string subject = "Nuevo crédito registrado";
 
